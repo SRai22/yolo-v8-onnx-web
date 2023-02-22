@@ -9,6 +9,7 @@
       name="description"
       content="Web site created using create-react-app"
     />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/stats.js/r16/Stats.min.js"></script>
     <link rel="apple-touch-icon" href="%PUBLIC_URL%/logo192.png" />
     <!--
       manifest.json provides metadata used when your web app is installed on a
@@ -25,10 +26,18 @@
       Learn how to configure a non-root public URL by running `npm run build`.
     -->
     <title>YOLO-v8 Object Detector</title>
+    <style>
+      #stats{
+        position: relative;
+        width:150%;
+        height: 150px;
+      } 
+    </style>
   </head>
   <body>
     <noscript>You need to enable JavaScript to run this app.</noscript>
     <div id="root"></div>
+    <div id="stats"></div>
     <!--
       This HTML file is a template.
       If you open it directly in the browser, you will see an empty page.

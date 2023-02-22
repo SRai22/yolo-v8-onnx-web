@@ -1,7 +1,7 @@
 import {Tensor, InferenceSession} from "onnxruntime-web";
 var cv = require("@techstark/opencv-js");
 
-class YOLO{
+class Yolo{
     constructor(modelPath){
         this.modelPath = modelPath;
         this.session = null;
@@ -97,3 +97,5 @@ class YOLO{
         return [input, xRatio, yRatio];
       };
 }
+
+export default Yolo;
