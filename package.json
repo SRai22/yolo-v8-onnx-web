@@ -9,7 +9,11 @@
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-scripts": "5.0.1",
-    "web-vitals": "^2.1.4"
+    "web-vitals": "^2.1.4",
+    "@techstark/opencv-js": "4.6.0-release.1",
+    "onnxruntime-web": "1.14.0",
+    "react-webcam": "7.0.1",
+    "@mediapipe/camera_utils": "0.3.1675466862"
   },
   "scripts": {
     "start": "react-scripts start",
@@ -34,5 +38,17 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
+  },
+  "author": {
+    "name": "Shravan S Rai",
+    "url": "https://github.com/SRai22"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/SRai22/yolo-v8-onnx-web.git"
+  },
+  "bugs": {
+    "url": "https://github.com/SRai22/yolo-v8-onnx-web/issues"
   }
 }
