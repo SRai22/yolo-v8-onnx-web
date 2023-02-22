@@ -12,7 +12,7 @@ export const drawBoxes = (canvas, detections) => {
         const label = labels[boundingBox.label];
         const color = colors.get(boundingBox.label);
         const score = (boundingBox.probability * 100).toFixed(1);
-        const [x,y,width,height] = boundingBox.bounding;
+        const [x,y,width,height] = boundingBox.bbox;
         const font = `18px Arial`;
         ctx.font = font;
         ctx.textBaseline = "top";
