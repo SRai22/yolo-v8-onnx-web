@@ -2,7 +2,7 @@ import React, {useState, useRef, useEffect} from 'react';
 import Yolo from './detector'; 
 import Webcam from "react-webcam";
 import { Camera } from "@mediapipe/camera_utils";
-import { drawBoxes } from './DrawUtils';
+import { drawDetections } from './DrawUtils';
 import { setupStats } from './StatsPanel';
 
 function ObjectDetection() {
@@ -11,7 +11,7 @@ function ObjectDetection() {
     let detector;
     let startInferenceTime, numInferences = 0;
     let inferenceTimeSum = 0, lastPanelUpdate = 0;
-    const stats = setupStats();
+    let stats;
 
     const beginEstimateStats =() =>{
         startInferenceTime = (performance || Date).now();
@@ -45,10 +45,18 @@ function ObjectDetection() {
     
           endEstimateStats();
         }
+        console.log(detections);
         const canvasElement = canvasRef.current;
+        const canvasCtx = canvasElement.getContext('2d')
+        canvasElement.width = 640;
+        canvasElement.height = 640;
+        canvasCtx.save();
+        canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
         if(detections && detections.length > 0){
-          drawBoxes(canvasElement, detections);
+          //drawBoxes(canvasCtx, detections);
+          drawDetections(detections, canvasCtx);
         }
+        canvasCtx.restore();
     }
 
     useEffect(()=>{
@@ -60,6 +68,7 @@ function ObjectDetection() {
       }, []);
 
     useEffect(()=>{
+        stats = setupStats();
         const camera = new Camera(webcamRef.current.video,{
             onFrame: async () =>{
                 await renderResult(webcamRef.current.video);
@@ -79,7 +88,7 @@ function ObjectDetection() {
             className="output_canvas"
             style={{
                 position: "fixed",
-                left: 0,
+                left: 640,
                 top: 0,
                 width: 640,
                 height: 640,

@@ -1,11 +1,7 @@
 import labels from "./labels.json"
 
 
-export const drawBoxes = (canvas, detections) => {
-    const ctx = canvas.getContext("2d");
-    ctx.clearRect(0,0, ctx.canvas.width, ctx.canvas.height);
-
-    const i=0;
+export const drawBoxes = (ctx, detections) => {
     const colors = new Colors();
 
     detections.forEach(boundingBox =>{
@@ -41,6 +37,36 @@ export const drawBoxes = (canvas, detections) => {
 
 };
 
+/**
+ * Color array
+ */
+const COLOR_PALETTE = [
+  '#ffffff', '#800000', '#469990', '#e6194b', '#42d4f4', '#fabed4', '#aaffc3',
+  '#9a6324', '#000075', '#f58231', '#4363d8', '#ffd8b1', '#dcbeff', '#808000',
+  '#ffe119', '#911eb4', '#bfef45', '#f032e6', '#3cb44b', '#a9a9a9'
+];
+
+export const drawDetections = (detections, ctx) =>{
+  // Loop through each bounding box
+  let i=0;
+  detections.forEach(prediction => {
+    // Extract boxes and classes
+    const [x, y, width, height] = prediction.bbox; 
+    const text = labels[prediction.label]; 
+    // Set styling
+    const color = COLOR_PALETTE[i]
+    ctx.strokeStyle = color
+    ctx.font = '18px Arial';
+
+    // Draw rectangles and text
+    ctx.beginPath();   
+    ctx.fillStyle = color
+    ctx.fillText(text, x, y);
+    ctx.rect(x, y, width, height); 
+    ctx.stroke();
+    i++;
+  });
+}
 class Colors {
     // ultralytics color palette https://ultralytics.com/
     constructor() {

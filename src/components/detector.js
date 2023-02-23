@@ -41,17 +41,19 @@ class Yolo{
         const tensor = new Tensor("float32", input.data32F, this.modelInputShape);
         const config = new Tensor("float32", new Float32Array([this.topk, this.iouThreshold, this.scoreThreshold]));
         const {output0} = await this.session.net.run({images: tensor});
-        const {selected} = await this.session.nms.run({detection: output0, config: config});
         const predictions = [];
-        for(let i = 0; i<selected.dims[1]; i++){
-            const data = selected.data.slice(i*selected.dims[2], (i+1)*selected.dims[2]); //get rows
+        for(let i = 0; i<output0.dims[1]; i++){
+            const data = output0.data.slice(i*output0.dims[2], (i+1)*output0.dims[2]); //get rows
             const bbox = data.slice(0,4);
             const scores = data.slice(4);
             const score = Math.max(...scores);
             const label = scores.indexOf(score);
-            console.log(label);
-            //console.log(bbox);
+            //console.log(label);
+            console.log(bbox);
 
+            if(score < this.scoreThreshold){
+                continue;
+            }
             const [x, y, w, h] = [
                     (bbox[0] /*- 0.5 * bbox[2]*/) * xRatio, // upscale left
                     (bbox[1] /*- 0.5 * bbox[3]*/) * yRatio, // upscale top
@@ -103,6 +105,49 @@ class Yolo{
       
         return [input, xRatio, yRatio];
       };
+
+    CalculateIoU(obj0, obj1) {
+        const interx0 = Math.max(obj0.x, obj1.x);
+        const intery0 = Math.max(obj0.y, obj1.y);
+        const interx1 = Math.min(obj0.x + obj0.w, obj1.x + obj1.w);
+        const intery1 = Math.min(obj0.y + obj0.h, obj1.y + obj1.h);
+        if (interx1 < interx0 || intery1 < intery0) return 0;
+    
+        const area0 = obj0.w * obj0.h;
+        const area1 = obj1.w * obj1.h;
+        const areaInter = (interx1 - interx0) * (intery1 - intery0);
+        const areaSum = area0 + area1 - areaInter;
+    
+        return areaInter / areaSum;
+    }
+    
+    Nms(bbox_list, threshold_nms_iou, check_class_id) {
+        const bbox_nms_list = []
+        bbox_list.sort((lhs, rhs) => {
+            if (lhs.score > rhs.score) return -1;
+            return bbox_nms_list;
+        });
+    
+        const is_merged = new Array(bbox_list.length).fill(false);
+        for (let index_high_score = 0; index_high_score < bbox_list.length; index_high_score++) {
+            const candidates = [];
+            if (is_merged[index_high_score]) continue;
+            candidates.push(bbox_list[index_high_score]);
+            for (let index_low_score = index_high_score + 1; index_low_score < bbox_list.length; index_low_score++) {
+                if (is_merged[index_low_score]) continue;
+                if (check_class_id && bbox_list[index_high_score].class_id !== bbox_list[index_low_score].class_id) continue;
+                if (this.CalculateIoU(bbox_list[index_high_score], bbox_list[index_low_score]) > threshold_nms_iou) {
+                    candidates.push(bbox_list[index_low_score]);
+                    is_merged[index_low_score] = true;
+                }
+            }
+    
+            bbox_nms_list.push(candidates[0]);
+        }
+
+        return bbox_nms_list;
+    }
+    
 }
 
 export default Yolo;
