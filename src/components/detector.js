@@ -1,5 +1,6 @@
 import {Tensor, InferenceSession} from "onnxruntime-web";
-var cv = require("@techstark/opencv-js");
+//var cv = require("@techstark/opencv-js");
+import cv from "@techstark/opencv-js";
 
 class Yolo{
     constructor(modelPath){
@@ -16,38 +17,44 @@ class Yolo{
     }
 
     async loadModel() {
-        const yolov8 = await InferenceSession.create(`${this.modelPath}/${this.modelName}`);
-        const nms = await InferenceSession.create(`${this.modelPath}/${this.nmsModel}`);
+        cv["onRuntimeInitialized"] = async () => {
+        const [yolov8, nms] = await Promise.all([
+            InferenceSession.create(`${this.modelPath}/${this.modelName}`),
+            InferenceSession.create(`${this.modelPath}/${this.nmsModel}`),
+        ]);
+        // const yolov8 = await InferenceSession.create(`${this.modelPath}/${this.modelName}`);
+        // const nms = await InferenceSession.create(`${this.modelPath}/${this.nmsModel}`);
 
         const tensor = new Tensor(
             "float32",
-            new Float32Array(modelInputShape.reduce((a, b) => a * b)),
-            modelInputShape
+            new Float32Array(this.modelInputShape.reduce((a, b) => a * b)),
+            this.modelInputShape
           );
         await yolov8.run({ images: tensor });
         console.log("inference session created successfully");
         this.session = {net: yolov8, nms: nms};
+        };
     }
 
     async predict(video){
         const [input, xRatio, yRatio] = this.preprocessing(video, this.modelWidth, this.modelHeight);
         const tensor = new Tensor("float32", input.data32F, this.modelInputShape);
         const config = new Tensor("float32", new Float32Array([this.topk, this.iouThreshold, this.scoreThreshold]));
-        const {output0} = await this.session.net.run({images: Tensor});
+        const {output0} = await this.session.net.run({images: tensor});
         const {selected} = await this.session.nms.run({detection: output0, config: config});
-
         const predictions = [];
-
         for(let i = 0; i<selected.dims[1]; i++){
             const data = selected.data.slice(i*selected.dims[2], (i+1)*selected.dims[2]); //get rows
             const bbox = data.slice(0,4);
             const scores = data.slice(4);
             const score = Math.max(...scores);
             const label = scores.indexOf(score);
+            console.log(label);
+            //console.log(bbox);
 
             const [x, y, w, h] = [
-                    (bbox[0] - 0.5 * bbox[2]) * xRatio, // upscale left
-                    (bbox[1] - 0.5 * bbox[3]) * yRatio, // upscale top
+                    (bbox[0] /*- 0.5 * bbox[2]*/) * xRatio, // upscale left
+                    (bbox[1] /*- 0.5 * bbox[3]*/) * yRatio, // upscale top
                     bbox[2] * xRatio, // upscale width
                     bbox[3] * yRatio, // upscale height
                     ];
@@ -55,7 +62,7 @@ class Yolo{
             predictions.push({
                 label: label,
                 probability: score, 
-                bbox: [x, y, w, h]
+                bbox: [x, y, w, h],
             });
         }
         input.delete();
