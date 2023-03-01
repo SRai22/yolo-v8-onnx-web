@@ -9,7 +9,7 @@ function ObjectDetection() {
     const webcamRef = useRef(null);
     const canvasRef = useRef(null);
     let detector;
-    let startInferenceTime, numInferences = 0;
+    let startInferenceTime = 0, numInferences = 0;
     let inferenceTimeSum = 0, lastPanelUpdate = 0;
     let stats;
 
@@ -23,7 +23,7 @@ function ObjectDetection() {
         ++numInferences;
 
         const panelUpdateMilliseconds = 1000;
-        if (endInferenceTime - lastPanelUpdate >= panelUpdateMilliseconds) {
+        if ((endInferenceTime - lastPanelUpdate) >= panelUpdateMilliseconds) {
             const averageInferenceTime = inferenceTimeSum / numInferences;
             inferenceTimeSum = 0;
             numInferences = 0;
@@ -40,6 +40,7 @@ function ObjectDetection() {
           try{
             detections = await detector.predict(video);
           } catch(error){
+            detector = null;
             alert(error);
           }
     
@@ -67,35 +68,37 @@ function ObjectDetection() {
         loadDetector();
       }, []);
 
-    useEffect(()=>{
-        stats = setupStats();
+      const runDetection = () =>{
+        stats = new setupStats();
         const camera = new Camera(webcamRef.current.video,{
             onFrame: async () =>{
                 await renderResult(webcamRef.current.video);
-            }, 
-            facingMode: "user",
+            },
+            facingMode:'environment',
             width: 640,
             height: 640
         });
         camera.start();
-    },[]);
+    }
 
-    return (
-        <>
-          <Webcam ref = {webcamRef} />
-          <canvas
-            ref={canvasRef}
-            className="output_canvas"
-            style={{
-                position: "fixed",
-                left: 640,
-                top: 0,
-                width: 640,
-                height: 640,
-            }}
-            ></canvas>
-        </>
-    );
+    return(
+      <>
+      <Webcam ref = {webcamRef} />
+      <canvas
+        ref={canvasRef}
+        className="output_canvas"
+        style={{
+            position: "fixed",
+            left: 0,
+            top: 0,
+            width: 640,
+            height: 640,
+        }}
+      >
+      </canvas>
+      <button onClick={runDetection}>turn on model</button>
+      </>
+  )
 }
 
 export default ObjectDetection;

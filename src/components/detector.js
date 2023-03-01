@@ -22,8 +22,6 @@ class Yolo{
             InferenceSession.create(`${this.modelPath}/${this.modelName}`),
             InferenceSession.create(`${this.modelPath}/${this.nmsModel}`),
         ]);
-        // const yolov8 = await InferenceSession.create(`${this.modelPath}/${this.modelName}`);
-        // const nms = await InferenceSession.create(`${this.modelPath}/${this.nmsModel}`);
 
         const tensor = new Tensor(
             "float32",
@@ -41,34 +39,32 @@ class Yolo{
         const tensor = new Tensor("float32", input.data32F, this.modelInputShape);
         const config = new Tensor("float32", new Float32Array([this.topk, this.iouThreshold, this.scoreThreshold]));
         const {output0} = await this.session.net.run({images: tensor});
-        const predictions = [];
-        for(let i = 0; i<output0.dims[1]; i++){
-            const data = output0.data.slice(i*output0.dims[2], (i+1)*output0.dims[2]); //get rows
-            const bbox = data.slice(0,4);
-            const scores = data.slice(4);
-            const score = Math.max(...scores);
-            const label = scores.indexOf(score);
-            //console.log(label);
-            console.log(bbox);
+        const { selected } = await this.session.nms.run({ detection: output0, config: config }); // perform nms and filter boxes
+        const boxes = [];
 
-            if(score < this.scoreThreshold){
-                continue;
-            }
+        // looping through output
+        for (let idx = 0; idx < selected.dims[1]; idx++) {
+            const data = selected.data.slice(idx * selected.dims[2], (idx + 1) * selected.dims[2]); // get rows
+            const box = data.slice(0, 4);
+            const scores = data.slice(4); // classes probability scores
+            const score = Math.max(...scores); // maximum probability scores
+            const label = scores.indexOf(score); // class id of maximum probability scores
+
             const [x, y, w, h] = [
-                    (bbox[0] /*- 0.5 * bbox[2]*/) * xRatio, // upscale left
-                    (bbox[1] /*- 0.5 * bbox[3]*/) * yRatio, // upscale top
-                    bbox[2] * xRatio, // upscale width
-                    bbox[3] * yRatio, // upscale height
-                    ];
+            (box[0] - 0.5 * box[2]) * xRatio, // upscale left
+            (box[1] - 0.5 * box[3]) * yRatio, // upscale top
+            box[2] * xRatio, // upscale width
+            box[3] * yRatio, // upscale height
+            ]; // keep boxes in maxSize range
 
-            predictions.push({
-                label: label,
-                probability: score, 
-                bbox: [x, y, w, h],
-            });
+            boxes.push({
+            label: label,
+            probability: score,
+            bbox: [x, y, w, h], // upscale box
+            }); // update boxes to draw later
         }
         input.delete();
-        return predictions;
+        return boxes;
     }
 
     preprocessing(video, modelWidth, modelHeight){
